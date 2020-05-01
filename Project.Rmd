@@ -1,0 +1,79 @@
+---
+title: "Regression"
+author: "Jessie Le"
+date: "3/6/2020"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r}
+data<- read.csv("C:/Users/hangl/Downloads/new_house_data.csv")
+data <- data[,-(1),drop=FALSE] 
+summary(data)
+```
+
+```{r}
+set.seed(101) # Set Seed so that same sample can be reproduced in future also
+sample <- sample.int(n = nrow(data), size = floor(.75*nrow(data)), replace = F) 
+train <- data[sample, ]
+test  <- data[-sample, ]
+```
+
+```{r}
+reg<-lm(price~.,data = train)
+summary(reg)
+anova(reg)
+```
+
+```{r}
+Standardized_residuals<-rstandard(reg)
+pred<-predict(reg)
+plot(pred,Standardized_residuals)
+qqnorm(Standardized_residuals)
+qqline(Standardized_residuals)
+plot(train$sqft_above, Standardized_residuals)
+plot(train$condition, Standardized_residuals)
+plot(train$Age, Standardized_residuals)
+plot(train$bedrooms, Standardized_residuals)
+```
+
+
+
+
+```{r}
+reg2<-lm(log(price)~.,data = train)
+summary(reg2)
+resi2 = rstandard(reg2)
+pred2<-predict(reg2)
+plot(pred2,resi2)
+qqnorm(resi2)
+qqline(resi2)
+plot(train$sqft_above, resi2)
+plot(train$condition, resi2)
+plot(train$Age, resi2)
+plot(train$bedrooms, resi2)
+```
+
+```{r}
+library(MASS)
+step.model <- stepAIC(reg2, direction = "both", 
+                      trace =FALSE)
+summary(step.model)
+```
+
+```{r}
+cor(train$bedrooms, train$sqft_above)
+cor(train$bathrooms, train$floors)
+```
+
+```{r}
+reg1 = lm(price~ bedrooms + bathrooms + condition + waterfront, data = train)
+summary(reg1)
+```
+
+```{r}
+reg2 = lm(price~ bedrooms + bathrooms + condition + waterfront + sqft_lot + sqft_above + sqft_basement + Age + floors + Renovated, data = train)
+summary(reg2)
+```
