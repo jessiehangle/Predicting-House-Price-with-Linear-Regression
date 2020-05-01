@@ -1,0 +1,168 @@
+---
+title: "Regression"
+author: "Jessie Le"
+date: "3/6/2020"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r}
+data<- read.csv("C:/Users/hangl/Downloads/new_house_data.csv")
+data <- data[,-(1),drop=FALSE] 
+```
+
+```{r}
+set.seed(101) # Set Seed so that same sample can be reproduced in future also
+sample <- sample.int(n = nrow(data), size = floor(.75*nrow(data)), replace = F) 
+train <- data[sample, ]
+test  <- data[-sample, ]
+```
+
+```{r}
+reg1<-lm(price~bedrooms + bathrooms + condition + waterfront,data = train)
+summary(reg1)
+Standardized_residuals<-rstandard(reg1)
+pred<-predict(reg1)
+plot(pred,Standardized_residuals)
+qqnorm(Standardized_residuals)
+qqline(Standardized_residuals)
+plot(train$sqft_above, Standardized_residuals)
+plot(train$condition, Standardized_residuals)
+plot(train$Age, Standardized_residuals)
+pred_test <-predict(reg1, test)
+rmse = sqrt(sum((pred_test - test$price)^2)/1137)
+rmse
+```
+
+```{r}
+reg2<-lm(price~.,data = train)
+summary(reg2)
+Standardized_residuals2<-rstandard(reg2)
+pred2<-predict(reg2)
+plot(pred2,Standardized_residuals2)
+qqnorm(Standardized_residuals2)
+qqline(Standardized_residuals2)
+plot(train$sqft_above, Standardized_residuals2)
+plot(train$condition, Standardized_residuals2)
+plot(train$Age, Standardized_residuals2)
+pred_test <-predict(reg2, test)
+rmse = sqrt(sum((pred_test - test$price)^2)/1137)
+rmse
+```
+
+
+```{r} 
+# Predicting price without city 
+reg3<-lm(price~ bedrooms + bathrooms + sqft_lot + floors + waterfront + condition + sqft_above + sqft_basement + Age + Renovated, data = train)
+summary(reg3)
+pred_test <-predict(reg3, test)
+rmse = sqrt(sum((pred_test - test$price)^2)/1137)
+rmse
+```
+
+```{r}
+# Transforming city into different residential neighbor
+train$residential = ifelse(train$city_Medina==1,1,ifelse(train$city_Mercer.Island==1,1,ifelse(train$city_Clyde.Hill==1, 1,ifelse(train$city_Yarrow.Point==1, 1, 0))))
+
+test$residential = ifelse(test$city_Medina==1,1,ifelse(test$city_Mercer.Island==1,1,ifelse(test$city_Clyde.Hill==1, 1,ifelse(test$city_Yarrow.Point==1, 1, 0))))
+
+reg4<-lm(price~ bedrooms + bathrooms + sqft_lot + floors + waterfront + condition + sqft_above + sqft_basement + Age + Renovated + residential, data = train)
+summary(reg4)
+pred_test <-predict(reg4, test)
+rmse = sqrt(sum((pred_test - test$price)^2)/1137)
+rmse
+```
+
+```{r}
+library(MASS)
+stepAIC(reg2, direction = 'both', trace = FALSE)
+reg5 <- lm(formula = price ~ bedrooms + bathrooms + sqft_lot + floors + 
+    waterfront + condition + sqft_above + sqft_basement + Age + 
+    Renovated + city_Auburn + city_Bellevue + city_Clyde.Hill + 
+    city_Des.Moines + city_Federal.Way + city_Issaquah + city_Kent + 
+    city_Kirkland + city_Maple.Valley + city_Medina + city_Mercer.Island + 
+    city_Newcastle + city_Redmond + city_Renton + city_Sammamish + 
+    city_Seattle + city_Shoreline + city_Vashon + city_Woodinville, 
+    data = train)
+summary(reg5)
+pred_test <-predict(reg5, test)
+rmse = sqrt(sum((pred_test - test$price)^2)/1137)
+rmse
+library(car)
+vif(reg5) # Checking multicollinearity
+```
+
+```{r}
+#Boxcox transformation
+library(MASS)
+boxcox(reg5)
+```
+
+```{r}
+# Transforming price with natural log
+reg6<-lm(log(price)~., data = train)
+summary(reg6)
+pred_test <-predict(reg6, test)
+rmse = sqrt(sum((exp(pred_test) - test$price)^2)/1137)
+rmse
+```
+```{r}
+# Transforming city into different residential neighbor
+train$residential = ifelse(train$city_Medina==1,1,ifelse(train$city_Mercer.Island==1,1,ifelse(train$city_Clyde.Hill==1, 1,ifelse(train$city_Yarrow.Point==1, 1, 0))))
+
+test$residential = ifelse(test$city_Medina==1,1,ifelse(test$city_Mercer.Island==1,1,ifelse(test$city_Clyde.Hill==1, 1,ifelse(test$city_Yarrow.Point==1, 1, 0))))
+
+reg7<-lm(log(price)~ bedrooms + bathrooms + sqft_lot + floors + waterfront + condition + sqft_above + sqft_basement + Age + Renovated + residential, data = train)
+summary(reg7)
+vif(reg7)
+pred_test <-predict(reg7, test)
+rmse = sqrt(sum((exp(pred_test) - test$price)^2)/1137)
+rmse
+```
+
+```{r}
+stepAIC(reg6, direction = 'both', trace = FALSE)
+
+reg8 <- lm(formula = log(price) ~ bedrooms + bathrooms + floors + waterfront + 
+    condition + sqft_above + sqft_basement + Age + Renovated + 
+    city_Bellevue + city_Black.Diamond + city_Bothell + city_Burien + 
+    city_Carnation + city_Clyde.Hill + city_Duvall + city_Fall.City + 
+    city_Inglewood.Finn.Hill + city_Issaquah + city_Kenmore + 
+    city_Kirkland + city_Lake.Forest.Park + city_Maple.Valley + 
+    city_Medina + city_Mercer.Island + city_Newcastle + city_Normandy.Park + 
+    city_North.Bend + city_Ravensdale + city_Redmond + city_Renton + 
+    city_Sammamish + city_Seattle + city_Shoreline + city_Snoqualmie + 
+    city_Snoqualmie.Pass + city_Vashon + city_Woodinville + city_Algona + 
+    city_Tukwila, data = train)
+summary(reg8)
+vif(reg8)
+pred_test <-predict(reg8, test)
+rmse = sqrt(sum((exp(pred_test) - test$price)^2)/1137)
+rmse
+```
+```{r}
+reg9<-lm(log(price)~ bedrooms + bathrooms + log(sqft_lot) + floors + waterfront + condition + log(sqft_above) + sqft_basement + Age + Renovated + residential, data = train)
+summary(reg9)
+pred_test <-predict(reg9, test)
+rmse = sqrt(sum((exp(pred_test) - test$price)^2)/1137)
+rmse
+```
+
+```{r}
+reg10 <- lm(formula = log(price) ~ bedrooms + bathrooms + floors + waterfront + 
+    condition + log(sqft_above) + sqft_basement + Age + Renovated + 
+    city_Bellevue + city_Black.Diamond + city_Bothell + city_Burien + 
+    city_Carnation + city_Clyde.Hill + city_Duvall + city_Fall.City + 
+    city_Inglewood.Finn.Hill + city_Issaquah + city_Kenmore + 
+    city_Kirkland + city_Lake.Forest.Park + city_Maple.Valley + 
+    city_Medina + city_Mercer.Island + city_Newcastle + city_Normandy.Park + 
+    city_North.Bend + city_Ravensdale + city_Redmond + city_Renton + 
+    city_Sammamish + city_Seattle + city_Shoreline + city_Snoqualmie + 
+    city_Snoqualmie.Pass + city_Vashon + city_Woodinville + city_Algona + 
+    city_Tukwila, data = train)
+summary(reg10)
+pred_test <-predict(reg10, test)
+rmse = sqrt(sum((exp(pred_test) - test$price)^2)/1137)
+rmse
+```
